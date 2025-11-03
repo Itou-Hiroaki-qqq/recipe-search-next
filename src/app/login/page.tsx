@@ -1,34 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, Suspense } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
-    const router = useRouter()
-    const searchParams = useSearchParams()
-    const callbackUrl = (searchParams.get("callbackUrl") ?? "/")
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const [error, setError] = useState<string | null>(null)
+// --- useSearchParams() を使う部分を別コンポーネントに分離 ---
+function LoginForm() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        setError(null)
+        e.preventDefault();
+        setError(null);
 
         const res = await signIn("credentials", {
             redirect: false,
             email,
             password,
-            callbackUrl
-        })
+            callbackUrl,
+        });
 
         if (res?.error) {
-            setError("ログインに失敗しました。メールアドレスまたはパスワードをご確認ください。")
+            setError("ログインに失敗しました。メールアドレスまたはパスワードをご確認ください。");
         } else {
-            router.push(callbackUrl)
+            router.push(callbackUrl);
         }
-    }
+    };
 
     return (
         <div className="max-w-md mx-auto mt-20 p-4">
@@ -63,8 +64,23 @@ export default function LoginPage() {
                 </button>
             </form>
             <div className="text-sm mt-4">
-                新規ユーザー登録はこちら → <a href="/signup" className="text-blue-600 underline hover:text-blue-800">登録ページへ</a>
+                新規ユーザー登録はこちら →{" "}
+                <a
+                    href="/signup"
+                    className="text-blue-600 underline hover:text-blue-800"
+                >
+                    登録ページへ
+                </a>
             </div>
         </div>
-    )
+    );
+}
+
+// --- Suspense でラップしてエラーを回避 ---
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="text-center mt-20">読み込み中...</div>}>
+            <LoginForm />
+        </Suspense>
+    );
 }
