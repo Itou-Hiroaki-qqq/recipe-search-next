@@ -66,7 +66,7 @@ function LoginForm() {
             <div className="text-sm mt-4">
                 新規ユーザー登録はこちら →{" "}
                 <a
-                    href="/signup"
+                    href="/register"
                     className="text-blue-600 underline hover:text-blue-800"
                 >
                     登録ページへ
