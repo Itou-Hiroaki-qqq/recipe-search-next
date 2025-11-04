@@ -1,71 +1,73 @@
-'use client'
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-import LayoutClient from './layout.client'
-import categoryMap from '@/data/categoryMap.json'
-import { useState } from 'react'
-import Link from 'next/link'
-import { useSession, signOut } from 'next-auth/react'
+import LayoutClient from './layout.client';
+import categoryMap from '@/data/categoryMap.json';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 
 type Recipe = {
-  title: string
-  imageUrl: string
-  url: string
-  description: string
-}
+  title: string;
+  imageUrl: string;
+  url: string;
+  description: string;
+};
 
 function toHiragana(str: string): string {
   return str.replace(/[ァ-ヶ]/g, match =>
     String.fromCharCode(match.charCodeAt(0) - 0x60)
-  )
+  );
 }
 
 function HomePageContent() {
-  const [keyword, setKeyword] = useState('')
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(false)
-  const { data: session } = useSession()
+  const [keyword, setKeyword] = useState('');
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
 
   const searchRecipes = async () => {
     if (!keyword.trim()) {
-      alert('食材を入力してください。')
-      return
+      alert('食材を入力してください。');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
-    const hiraganaKeyword = toHiragana(keyword.trim())
+    const hiraganaKeyword = toHiragana(keyword.trim());
 
     const matchedKey = Object.keys(categoryMap).find(key => {
-      const normalizedKey = toHiragana(key)
-      return normalizedKey.includes(hiraganaKeyword)
-    })
+      const normalizedKey = toHiragana(key);
+      return normalizedKey.includes(hiraganaKeyword);
+    });
 
     const categoryId = matchedKey
       ? (categoryMap as Record<string, string>)[matchedKey]
-      : null
+      : null;
 
     if (!categoryId) {
-      alert(`カテゴリIDが登録されていない食材です: ${keyword}`)
-      setLoading(false)
-      return
+      alert(`カテゴリIDが登録されていない食材です: ${keyword}`);
+      setLoading(false);
+      return;
     }
 
     try {
-      const response = await fetch(`/api/search?categoryId=${encodeURIComponent(categoryId)}`)
-      const data = await response.json()
-      setRecipes(data)
+      const response = await fetch(`/api/search?categoryId=${encodeURIComponent(categoryId)}`);
+      const data = await response.json();
+      setRecipes(data);
     } catch (err) {
-      console.error('検索エラー:', err)
-      alert('検索に失敗しました。')
+      console.error('検索エラー:', err);
+      alert('検索に失敗しました。');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const addToFavorites = async (recipe: Recipe) => {
     if (!session?.user?.id) {
-      alert('ログインが必要です。')
-      return
+      alert('ログインが必要です。');
+      return;
     }
 
     try {
@@ -79,19 +81,19 @@ function HomePageContent() {
           description: recipe.description,
           userId: session.user.id,
         }),
-      })
+      });
 
       if (res.ok) {
-        alert('お気に入りに追加しました。')
+        alert('お気に入りに追加しました。');
       } else if (res.status === 409) {
-        alert('このレシピはすでにお気に入りに追加されています。')
+        alert('このレシピはすでにお気に入りに追加されています。');
       } else {
-        alert('追加に失敗しました。')
+        alert('追加に失敗しました。');
       }
     } catch {
-      alert('通信エラーが発生しました。')
+      alert('通信エラーが発生しました。');
     }
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -162,13 +164,20 @@ function HomePageContent() {
         </ul>
       )}
     </div>
-  )
+  );
 }
 
-export default function HomePage() {
+// 最上位でサーバーサイド認証チェックを行う
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect('/login');
+  }
+
   return (
     <LayoutClient>
       <HomePageContent />
     </LayoutClient>
-  )
+  );
 }
