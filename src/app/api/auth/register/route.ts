@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "メールアドレスとパスワードは必須です。" }, { status: 400 });
         }
 
-        // 既に同じメールがあれば拒否
+        // 既存ユーザー確認
         const existing = await prisma.user.findUnique({ where: { email } });
         if (existing) {
             return NextResponse.json({ error: "このメールアドレスは既に登録されています。" }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         // パスワードをハッシュ化
         const hashed = await hash(password, 10);
 
-        // ユーザー作成
+        // ユーザー登録
         const user = await prisma.user.create({
             data: {
                 email,
@@ -29,9 +29,15 @@ export async function POST(req: Request) {
             },
         });
 
-        return NextResponse.json({ message: "登録が完了しました。", userId: user.id }, { status: 201 });
+        return NextResponse.json(
+            { message: "登録が完了しました。", userId: user.id },
+            { status: 201 }
+        );
     } catch (error) {
         console.error("REGISTER Error:", error);
-        return NextResponse.json({ error: "登録処理に失敗しました。" }, { status: 500 });
+        return NextResponse.json(
+            { error: "登録処理に失敗しました。" },
+            { status: 500 }
+        );
     }
 }
