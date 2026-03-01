@@ -41,8 +41,7 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async session({ session, token }) {
             if (session.user && token?.sub) {
-                // 型エラー防止のため any で拡張
-                (session.user as any).id = token.sub;
+                session.user.id = token.sub;
             }
             return session;
         },

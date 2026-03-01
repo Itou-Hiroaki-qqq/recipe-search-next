@@ -1,25 +1,27 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-const prisma = new PrismaClient()
-
 // お気に入り追加（POST）
 export async function POST(req: Request) {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+        return NextResponse.json({ error: '認証されていません。' }, { status: 401 })
+    }
+
     try {
         const body = await req.json()
-        const { title, url, imageUrl, description, userId } = body
+        const { title, url, imageUrl, description } = body
+        const userId = Number(session.user.id)
 
-        if (!title || !url || !imageUrl || !userId) {
+        if (!title || !url || !imageUrl) {
             return NextResponse.json({ error: '必要なデータが不足しています。' }, { status: 400 })
         }
 
         const existing = await prisma.favorite.findFirst({
-            where: {
-                userId: Number(userId),
-                url: url,
-            },
+            where: { userId, url },
         })
 
         if (existing) {
@@ -27,13 +29,7 @@ export async function POST(req: Request) {
         }
 
         const newFavorite = await prisma.favorite.create({
-            data: {
-                title,
-                url,
-                imageUrl,
-                description,
-                userId: Number(userId),
-            },
+            data: { title, url, imageUrl, description, userId },
         })
 
         return NextResponse.json(newFavorite, { status: 201 })
