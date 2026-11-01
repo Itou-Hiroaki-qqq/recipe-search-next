@@ -4,6 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: '簡単レシピ検索',
   description: '楽天レシピAPIを活用して食材名から簡単に人気のレシピを検索できるアプリです',
+  robots: 'noindex, nofollow',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
